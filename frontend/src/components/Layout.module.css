@@ -1,0 +1,26 @@
+/* Item da barra de navegação (fundo escuro). */
+.navLink {
+  border-radius: var(--mantine-radius-md);
+  margin-bottom: 4px;
+  color: var(--mantine-color-gray-3);
+}
+
+/* Hover: fundo escuro translúcido (não branco), texto branco -> mantém-se legível. */
+.navLink:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* Botão de terminar sessão. */
+.logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--mantine-radius-md);
+  color: var(--mantine-color-gray-4);
+}
+.logout:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
