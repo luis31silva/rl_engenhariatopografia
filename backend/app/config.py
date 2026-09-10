@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     #   mysql+pymysql://user:password@host:port/dbname
     database_url: str = "sqlite:///./dev.db"
 
+    # SSL na ligação MySQL. O Aiven exige TLS; manter True em produção.
+    # (Ignorado quando a BD é SQLite.)
+    db_ssl: bool = True
+
     # Autenticação (JWT).
     secret_key: str = "dev-secret-change-me"
     access_token_expire_minutes: int = 60 * 24

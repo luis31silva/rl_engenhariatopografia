@@ -8,11 +8,15 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# SQLite precisa de um argumento especial para ser usado em múltiplas threads
-# (relevante para os testes e para o dev local). MySQL não precisa.
-connect_args = {}
+# Argumentos de ligação específicos por tipo de base de dados.
+connect_args: dict = {}
 if settings.database_url.startswith("sqlite"):
+    # SQLite precisa disto para uso em múltiplas threads (testes/dev local).
     connect_args = {"check_same_thread": False}
+elif settings.database_url.startswith("mysql") and settings.db_ssl:
+    # O Aiven (MySQL) exige TLS. Passar um dict `ssl` não vazio ativa a ligação
+    # segura no PyMySQL sem necessitar de um ficheiro de CA local.
+    connect_args = {"ssl": {"ssl": True}}
 
 engine = create_engine(
     settings.database_url,
