@@ -38,8 +38,8 @@ export function LoginPage() {
   }
 
   return (
-    <Center mih="100vh" p="md" bg="carvao.9">
-      <Paper shadow="xl" p="xl" radius="lg" w={380} bg="white">
+    <Center mih="100vh" p="md" bg="gray.0">
+      <Paper withBorder shadow="md" p="xl" radius="lg" w={380} bg="white">
         <form onSubmit={handleSubmit}>
           <Stack>
             <Stack gap={12} align="center" mb="xs">

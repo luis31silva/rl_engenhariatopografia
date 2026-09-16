@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { clearToken, getToken, login as loginApi, setToken } from "../api/auth";
+import { AUTH_LOGOUT_EVENT, clearToken, getToken, login as loginApi, setToken } from "../api/auth";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -14,10 +14,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTok] = useState<string | null>(getToken());
 
   useEffect(() => {
-    // Mantém em sincronia se o token for limpo pelo interceptor (401).
-    const onStorage = () => setTok(getToken());
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    // Sincroniza o estado quando o token muda:
+    // - `storage`: alterações noutro separador.
+    // - `auth:logout`: token limpo neste separador (ex.: 401 no interceptor).
+    const sincronizar = () => setTok(getToken());
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(AUTH_LOGOUT_EVENT, sincronizar);
+    return () => {
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(AUTH_LOGOUT_EVENT, sincronizar);
+    };
   }, []);
 
   const value = useMemo<AuthState>(

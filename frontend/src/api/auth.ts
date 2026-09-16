@@ -1,6 +1,8 @@
 import { api } from "./client";
 
 const TOKEN_KEY = "rl_token";
+// Evento disparado quando a sessão termina (logout manual ou token inválido/expirado).
+export const AUTH_LOGOUT_EVENT = "auth:logout";
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -12,6 +14,8 @@ export function setToken(token: string): void {
 
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  // Notifica a app (no mesmo separador) para atualizar o estado de autenticação.
+  window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT));
 }
 
 export async function login(username: string, password: string): Promise<string> {

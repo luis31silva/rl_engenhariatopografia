@@ -116,6 +116,15 @@ alembic revision --autogenerate -m "descricao"   # gerar nova migração
 
 ### Backend — Render (Web Service)
 
+> **Versão do Python (importante):** o Render usa por defeito uma versão muito recente
+> (atualmente 3.14) que ainda não tem *wheels* pré-compilados para o `pydantic-core`, o que
+> faz o build tentar compilar Rust e **falhar** (erro "Read-only file system" / maturin).
+> Para evitar, o projeto fixa **Python 3.12.3** com o ficheiro `.python-version` (presente
+> em `backend/.python-version` e na raiz do repositório — o Render lê este ficheiro; o antigo
+> `runtime.txt` já **não** é usado). **Reforço recomendado:** definir a variável de ambiente
+> `PYTHON_VERSION=3.12.3` nas definições do serviço. Depois de alterar, fazer *Clear build
+> cache & deploy* para não reaproveitar o ambiente 3.14 anterior.
+
 > **WeasyPrint (faturas PDF)** precisa de bibliotecas de sistema (Pango, Cairo, GDK-PixBuf).
 > No ambiente Python nativo do Render, adicionar um ficheiro `Aptfile` na raiz do `backend`
 > com: `libpango-1.0-0`, `libpangoft2-1.0-0`, `libcairo2`, `libgdk-pixbuf-2.0-0`.
@@ -123,11 +132,11 @@ alembic revision --autogenerate -m "descricao"   # gerar nova migração
 > de geração de PDF falha em runtime (o resto da aplicação funciona normalmente).
 
 - **Root Directory:** `backend`
-- **Build Command:** `pip install -r requirements.txt`
+- **Build Command:** `pip install --upgrade pip && pip install -r requirements.txt`
 - **Start Command:** `alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
   (o `app.seed` cria o utilizador inicial se ainda não existir; é idempotente.)
 - **Variáveis de ambiente:** `DATABASE_URL`, `SECRET_KEY`, `INITIAL_USERNAME`, `INITIAL_PASSWORD`,
-  `CORS_ORIGINS` (URL do frontend), `ENVIRONMENT=production`.
+  `CORS_ORIGINS` (URL do frontend), `ENVIRONMENT=production`, `PYTHON_VERSION=3.12.3`.
 
 ### Frontend — Render (Static Site)
 
@@ -135,6 +144,13 @@ alembic revision --autogenerate -m "descricao"   # gerar nova migração
 - **Build Command:** `npm install && npm run build`
 - **Publish Directory:** `dist`
 - **Variáveis de ambiente:** `VITE_API_BASE_URL` (URL pública do backend).
+
+> **SPA rewrite (importante):** sendo uma Single-Page App, aceder diretamente a uma rota
+> como `/login` ou recarregar a página dá "Not Found" se o servidor não reencaminhar tudo
+> para o `index.html`. O projeto inclui `frontend/public/_redirects` com a regra
+> `/*  /index.html  200` (copiada para `dist/` no build). Se o Render não a aplicar
+> automaticamente, adicionar no dashboard do Static Site, em **Redirects/Rewrites**:
+> Source `/*`, Destination `/index.html`, Action **Rewrite**.
 
 > **CORS:** garantir que `CORS_ORIGINS` no backend inclui o domínio público do frontend,
 > caso contrário o browser bloqueia as chamadas.

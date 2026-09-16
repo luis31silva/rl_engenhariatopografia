@@ -39,19 +39,14 @@ export function Layout() {
       navbar={{ width: 250, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding="md"
     >
-      <AppShell.Header bg="carvao.9" withBorder={false}>
+      <AppShell.Header>
         <Group h="100%" px="md" gap="sm">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" color="white" />
+          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
           <Logo height={52} />
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar
-        p="md"
-        bg="carvao.9"
-        withBorder={false}
-        style={{ display: "flex", flexDirection: "column" }}
-      >
+      <AppShell.Navbar p="md" style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ flex: 1 }}>
           {navItems.map((item) => {
             const ativo = location.pathname === item.to;
@@ -63,10 +58,7 @@ export function Layout() {
                 label={item.label}
                 leftSection={<item.icon size={18} />}
                 active={ativo}
-                color="salvia"
-                variant="filled"
                 onClick={close}
-                className={ativo ? undefined : classes.navLink}
               />
             );
           })}
