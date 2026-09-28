@@ -24,16 +24,17 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[IntermediarioRead])
-def listar(db: Session = Depends(get_db)):
-    ano_atual = date.today().year
+def listar(ano: int | None = None, db: Session = Depends(get_db)):
+    # As colunas "do ano" mostram os dados do `ano` pedido; por defeito, o ano atual.
+    ano_alvo = ano if ano is not None else date.today().year
 
     # Expressão para o ano de adjudicação do item, conforme o dialeto da BD.
     if db.bind.dialect.name == "sqlite":
         ano_item = func.strftime("%Y", TrabalhoItem.data_adjudicacao)
-        ano_valor = str(ano_atual)
+        ano_valor = str(ano_alvo)
     else:
         ano_item = func.year(TrabalhoItem.data_adjudicacao)
-        ano_valor = ano_atual
+        ano_valor = ano_alvo
 
     # Nº de trabalhos por intermediário (trabalhos distintos).
     contagem_rows = db.execute(
@@ -55,7 +56,7 @@ def listar(db: Session = Depends(get_db)):
     ).all()
     valor_por_interm = {iid: Decimal(str(v)) for iid, v in valor_rows}
 
-    # Valor do ANO ATUAL: soma dos valores dos itens adjudicados este ano.
+    # Valor do ANO ALVO: soma dos valores dos itens adjudicados nesse ano.
     valor_ano_rows = db.execute(
         select(
             Trabalho.intermediario_id,
@@ -67,7 +68,7 @@ def listar(db: Session = Depends(get_db)):
     ).all()
     valor_ano_por_interm = {iid: Decimal(str(v)) for iid, v in valor_ano_rows}
 
-    # Nº de trabalhos DISTINTOS do ano atual (com pelo menos um item adjudicado este ano).
+    # Nº de trabalhos DISTINTOS do ano alvo (com pelo menos um item adjudicado nesse ano).
     num_ano_rows = db.execute(
         select(
             Trabalho.intermediario_id,

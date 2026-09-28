@@ -1,21 +1,91 @@
-# RL Eng & Top — Gestão do Gabinete de Topografia
+<div align="center">
 
-Aplicação web que substitui a folha de cálculo (`CONT- RLENGTOP.xlsm`) usada para gerir
-o negócio de um gabinete de engenharia e topografia: registo de trabalhos, clientes,
-intermediários, especialidades, dashboard financeiro, alertas de prazos e faturas em PDF.
+<img src="docs/images/logo.png" alt="RL Engenharia & Topografia" height="120" />
+
+# RL Eng & Top — Plataforma de Gestão
+
+**Aplicação web full-stack que substitui a folha de Excel de um gabinete de engenharia e topografia por uma plataforma moderna de gestão de trabalhos, prazos, pagamentos e finanças.**
+
+[Ver demo](https://rl-engenhariatopografia-1.onrender.com) · Feito com FastAPI · React · TypeScript · MySQL
+
+</div>
+
+---
+
+## O problema
+
+Um gabinete de engenharia e topografia geria todo o negócio numa única folha de Excel com macros: centenas de trabalhos, várias especialidades por trabalho, prazos, pagamentos, colaboradores externos e um relatório financeiro anual — tudo à mão, propenso a erros e difícil de consultar.
+
+## A solução
+
+Uma aplicação web que digitaliza esse fluxo, acessível no computador ou no telemóvel, com os dados históricos migrados da própria folha original (mais de **900 trabalhos** desde 2015).
+
+<div align="center">
+<img src="docs/images/trabalhos.png" alt="Lista de trabalhos" width="80%" />
+<br/><em>Lista de trabalhos com pesquisa, filtros e estado de cada especialidade</em>
+</div>
+
+---
+
+## O que faz
+
+### Gestão de trabalhos
+Cada trabalho pode ter **várias especialidades** (levantamento topográfico, estabilidade, arquitetura, etc.), cada uma com o seu valor, datas, colaborador externo e estado próprio. Pesquisa por cliente/referência, filtros avançados (especialidade, intermediário, externo, ano, estado, situação de pagamento), ordenação e paginação.
+
+### Estado de desempenho automático
+Cada especialidade é classificada automaticamente em **TOP / OK / MAU** consoante o tempo de entrega face aos prazos definidos — replicando (e automatizando) a lógica que existia na folha original.
+
+### Ponto de situação de pagamento
+Controlo visual do pagamento por especialidade (**Pago / Falta pagamento / Em curso**), com cores intuitivas, editável individualmente ou aplicável a todo o trabalho de uma vez.
+
+### Alertas de prazos
+Painel que destaca os trabalhos a aproximar-se do prazo ou já em atraso, para nada passar ao lado.
+
+<div align="center">
+<img src="docs/images/dashboard.png" alt="Relatório de Contas" width="80%" />
+<br/><em>Relatório de Contas: evolução anual, custos, liquidez e depreciação de equipamento</em>
+</div>
+
+### Relatório financeiro
+Dashboard com receitas, custos e resultados líquidos por ano, percentagem de liquidez, variação anual e **previsão de depreciação de equipamento**. Gestão de custos fixos anuais e de equipamentos diretamente na aplicação.
+
+### Faturas e recibos em PDF
+Geração de recibos em PDF a partir de qualquer trabalho, com os dados do gabinete e das especialidades.
+
+### Análise de intermediários e externos
+Estatísticas por quem angaria trabalho (nº de trabalhos, valor total, valor médio, e valores do ano corrente) e por colaborador externo (nº de trabalhos e total pago).
+
+---
+
+## Destaques técnicos
+
+- **Full-stack** com separação limpa entre API (FastAPI) e SPA (React + TypeScript).
+- **Modelação de domínio real**: relação trabalho → múltiplas especialidades, com refactor de esquema e migração de dados históricos reais.
+- **Migração de dados a partir de Excel**, incluindo leitura de estados a partir de **cores de células** e reconciliação de referências duplicadas.
+- **Autenticação JWT**, filtros/paginação server-side, agregações financeiras e geração de PDF.
+- **~99 testes automatizados** (pytest) a cobrir a lógica de negócio e a API.
+- **Migrações de esquema versionadas** (Alembic), compatíveis com SQLite (dev) e MySQL (produção).
+- **Deploy em produção**: backend + frontend no Render, base de dados MySQL gerida no Aiven.
 
 ## Stack
 
-- **Backend:** FastAPI + SQLAlchemy + Alembic, MySQL (driver PyMySQL), JWT.
-- **Frontend:** React + Vite + TypeScript + Mantine.
-- **Base de dados:** MySQL (produção via Aiven). SQLite é usado por defeito em dev/testes.
-- **Deploy:** Render (backend + frontend), MySQL no Aiven — feito manualmente.
+| Camada | Tecnologias |
+|---|---|
+| **Frontend** | React, TypeScript, Vite, Mantine, React Query |
+| **Backend** | Python, FastAPI, SQLAlchemy, Alembic, Pydantic |
+| **Base de dados** | MySQL (produção), SQLite (dev/testes) |
+| **Auth & PDF** | JWT (python-jose), WeasyPrint |
+| **Infraestrutura** | Render (web + static), Aiven (MySQL), Git |
 
-## Estrutura
+---
+
+# Documentação técnica
+
+## Estrutura do repositório
 
 ```
-backend/    API FastAPI, modelos, migrações Alembic, testes
-frontend/   SPA React + Vite + TypeScript
+backend/      API FastAPI, modelos, migrações Alembic, testes
+frontend/     SPA React + Vite + TypeScript
 extrai_xlsm/  Conteúdo extraído da planilha original (referência)
 ```
 
@@ -111,8 +181,7 @@ alembic revision --autogenerate -m "descricao"   # gerar nova migração
 
 1. Criar um serviço MySQL no Aiven e obter a *connection string*.
 2. Compor `DATABASE_URL` no formato `mysql+pymysql://user:pass@host:porta/bd`.
-   (O Aiven exige SSL; para MySQL o PyMySQL negoceia TLS automaticamente na maioria
-   dos casos. Se necessário, acrescentar parâmetros de SSL à connection string.)
+   (O Aiven exige SSL; a aplicação ativa TLS por defeito na ligação MySQL via `DB_SSL`.)
 
 ### Backend — Render (Web Service)
 
@@ -179,7 +248,8 @@ No fim, o script imprime um relatório (especialidades, intermediários, externo
 trabalhos importados/ignorados). As linhas em branco e as referências repetidas são
 ignoradas automaticamente.
 
-O que é importado: especialidades (com prazos TOP/OK), intermediários (com valor),
-externos, os trabalhos (com as suas especialidades/itens) e os equipamentos para
-depreciação (aba *Relatório Contas*). Os **custos fixos anuais** não são importados
-automaticamente e podem ser geridos na aplicação (página *Relatório de Contas*).
+O que é importado: especialidades (com prazos TOP/OK), intermediários, externos, os
+trabalhos (com as suas especialidades/itens), a situação de pagamento (lida a partir das
+cores das células) e os equipamentos para depreciação (aba *Relatório Contas*). Os
+**custos fixos anuais** não são importados automaticamente e podem ser geridos na aplicação
+(página *Relatório de Contas*).

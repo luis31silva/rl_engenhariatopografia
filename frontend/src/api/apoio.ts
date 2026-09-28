@@ -48,8 +48,10 @@ export async function deleteEspecialidade(id: number): Promise<void> {
 }
 
 // ---- Intermediários ----
-export async function listIntermediarios(): Promise<Intermediario[]> {
-  const { data } = await api.get<Intermediario[]>("/intermediarios");
+export async function listIntermediarios(ano?: number): Promise<Intermediario[]> {
+  const { data } = await api.get<Intermediario[]>("/intermediarios", {
+    params: ano != null ? { ano } : undefined,
+  });
   return data;
 }
 export async function createIntermediario(input: IntermediarioInput): Promise<Intermediario> {

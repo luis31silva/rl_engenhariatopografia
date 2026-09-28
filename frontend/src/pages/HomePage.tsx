@@ -196,7 +196,7 @@ export function HomePage() {
   }
 
   const { data: especialidades = [] } = useQuery({ queryKey: ["especialidades"], queryFn: listEspecialidades });
-  const { data: intermediarios = [] } = useQuery({ queryKey: ["intermediarios"], queryFn: listIntermediarios });
+  const { data: intermediarios = [] } = useQuery({ queryKey: ["intermediarios"], queryFn: () => listIntermediarios() });
   const { data: externos = [] } = useQuery({ queryKey: ["externos"], queryFn: listExternos });
 
   const filtros = {

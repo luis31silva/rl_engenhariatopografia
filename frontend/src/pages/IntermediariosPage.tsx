@@ -5,6 +5,7 @@ import {
   Button,
   Group,
   Modal,
+  Select,
   Stack,
   Table,
   TextInput,
@@ -33,6 +34,14 @@ export function IntermediariosPage() {
   const [sortBy, setSortBy] = useState<string | null>("nome");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
+  const anoAtual = new Date().getFullYear();
+  const [ano, setAno] = useState<number>(anoAtual);
+  // Opções de ano: do ano atual até 2015 (início do histórico).
+  const anosDisponiveis = Array.from(
+    { length: anoAtual - 2015 + 1 },
+    (_, i) => anoAtual - i,
+  );
+
   function handleSort(campo: string) {
     if (sortBy === campo) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
@@ -42,11 +51,9 @@ export function IntermediariosPage() {
   }
 
   const { data = [], isLoading } = useQuery({
-    queryKey: ["intermediarios"],
-    queryFn: listIntermediarios,
+    queryKey: ["intermediarios", ano],
+    queryFn: () => listIntermediarios(ano),
   });
-
-  const anoAtual = new Date().getFullYear();
 
   const dataOrdenada = ordenarLista(data, sortBy, sortDir, (item, c) => {
     if (c === "num_trabalhos") return item.num_trabalhos ?? 0;
@@ -97,9 +104,24 @@ export function IntermediariosPage() {
     <Stack>
       <Group justify="space-between">
         <Title order={2}>Intermediários</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>
-          Novo
-        </Button>
+        <Group>
+          <Select
+            label="Ano"
+            aria-label="Ano das colunas por ano"
+            data={anosDisponiveis.map((a) => String(a))}
+            value={String(ano)}
+            onChange={(v) => v && setAno(Number(v))}
+            allowDeselect={false}
+            w={110}
+          />
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={openCreate}
+            style={{ alignSelf: "flex-end" }}
+          >
+            Novo
+          </Button>
+        </Group>
       </Group>
 
       <Table.ScrollContainer minWidth={760}>
@@ -110,8 +132,8 @@ export function IntermediariosPage() {
               <SortableTh label="Nº trabalhos" campo="num_trabalhos" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} ta="right" />
               <SortableTh label="Valor total" campo="valor_total" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} ta="right" />
               <SortableTh label="Valor médio" campo="valor_medio" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} ta="right" />
-              <SortableTh label={`Nº trab. ${anoAtual}`} campo="num_trabalhos_ano" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} ta="right" />
-              <SortableTh label={`Valor ${anoAtual}`} campo="valor_ano" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} ta="right" />
+              <SortableTh label={`Nº trab. ${ano}`} campo="num_trabalhos_ano" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} ta="right" />
+              <SortableTh label={`Valor ${ano}`} campo="valor_ano" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} ta="right" />
               <Table.Th />
             </Table.Tr>
           </Table.Thead>

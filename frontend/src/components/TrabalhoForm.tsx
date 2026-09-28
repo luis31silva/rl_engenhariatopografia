@@ -93,7 +93,7 @@ export function TrabalhoForm({ opened, onClose, onSubmit, submitting, initial }:
   const [form, setForm] = useState<FormState>(empty);
 
   const { data: especialidades = [] } = useQuery({ queryKey: ["especialidades"], queryFn: listEspecialidades });
-  const { data: intermediarios = [] } = useQuery({ queryKey: ["intermediarios"], queryFn: listIntermediarios });
+  const { data: intermediarios = [] } = useQuery({ queryKey: ["intermediarios"], queryFn: () => listIntermediarios() });
   const { data: externos = [] } = useQuery({ queryKey: ["externos"], queryFn: listExternos });
 
   useEffect(() => {
