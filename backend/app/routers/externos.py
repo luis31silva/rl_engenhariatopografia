@@ -1,4 +1,5 @@
 """CRUD de Externos (colaboradores externos)."""
+from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,7 +20,18 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[ExternoRead])
-def listar(db: Session = Depends(get_db)):
+def listar(ano: int | None = None, db: Session = Depends(get_db)):
+    # As colunas "do ano" mostram os dados do `ano` pedido; por defeito, o ano atual.
+    ano_alvo = ano if ano is not None else date.today().year
+
+    # Ano em que o custo do externo se materializa: ano de ENTREGA do item.
+    if db.bind.dialect.name == "sqlite":
+        ano_item = func.strftime("%Y", TrabalhoItem.data_entrega)
+        ano_valor = str(ano_alvo)
+    else:
+        ano_item = func.year(TrabalhoItem.data_entrega)
+        ano_valor = ano_alvo
+
     # Agrega, por externo, o total pago e o número de trabalhos associados.
     rows = db.execute(
         select(
@@ -32,11 +44,26 @@ def listar(db: Session = Depends(get_db)):
         .order_by(Externo.nome)
     ).all()
 
+    # Valor e nº de trabalhos do ANO ALVO (itens entregues nesse ano).
+    ano_rows = db.execute(
+        select(
+            TrabalhoItem.externo_id,
+            func.coalesce(func.sum(TrabalhoItem.valor_externo), 0),
+            func.count(TrabalhoItem.id),
+        )
+        .where(TrabalhoItem.externo_id.is_not(None), ano_item == ano_valor)
+        .group_by(TrabalhoItem.externo_id)
+    ).all()
+    ano_por_externo = {eid: (Decimal(str(v or 0)), int(n or 0)) for eid, v, n in ano_rows}
+
     resultado = []
     for externo, total, num in rows:
         item = ExternoRead.model_validate(externo)
         item.total_ganho = Decimal(str(total or 0))
         item.num_trabalhos = int(num or 0)
+        valor_ano, num_ano = ano_por_externo.get(externo.id, (Decimal("0"), 0))
+        item.valor_ano = valor_ano
+        item.num_trabalhos_ano = num_ano
         resultado.append(item)
     return resultado
 

@@ -6,6 +6,7 @@ import {
   IconCategory,
   IconChartBar,
   IconLogout,
+  IconTool,
   IconUsers,
   IconUserShare,
 } from "@tabler/icons-react";
@@ -17,6 +18,7 @@ import classes from "./Layout.module.css";
 const navItems = [
   { to: "/", label: "Trabalhos", icon: IconBriefcase },
   { to: "/dashboard", label: "Relatório de Contas", icon: IconChartBar },
+  { to: "/equipamentos", label: "Equipamentos", icon: IconTool },
   { to: "/especialidades", label: "Especialidades", icon: IconCategory },
   { to: "/intermediarios", label: "Intermediários", icon: IconUserShare },
   { to: "/externos", label: "Externos", icon: IconUsers },

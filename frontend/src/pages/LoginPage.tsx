@@ -46,14 +46,14 @@ export function LoginPage() {
               <Box
                 p="xl"
                 style={{
-                  background: "#000000",
+                  background: "#ffffff",
                   borderRadius: 20,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Logo variant="vertical" height={160} textColor="white" />
+                <Logo variant="vertical" height={160} />
               </Box>
               <Text c="dimmed" size="sm">
                 Inicie sessão para continuar

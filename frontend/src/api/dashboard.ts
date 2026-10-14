@@ -9,6 +9,14 @@ export interface ResumoAno {
   variacao_pct: number | null;
 }
 
+export interface ResumoMes {
+  ano: number;
+  mes: number;
+  brutos: string;
+  custos: string;
+  liquidos: string;
+}
+
 export interface LinhaDepreciacao {
   ano: number;
   valor_inicial: string;
@@ -24,6 +32,7 @@ export interface DepreciacaoEquipamento {
 
 export interface Dashboard {
   resumo_anual: ResumoAno[];
+  resumo_mensal: ResumoMes[];
   depreciacao: DepreciacaoEquipamento[];
   total_brutos: string;
   total_custos: string;
@@ -32,6 +41,30 @@ export interface Dashboard {
 
 export async function getDashboard(): Promise<Dashboard> {
   const { data } = await api.get<Dashboard>("/dashboard");
+  return data;
+}
+
+// ---- Resumo por especialidade (anual e mensal) ----
+export interface EspecialidadeAno {
+  ano: number;
+  num_itens: number;
+  valor: string;
+}
+export interface EspecialidadeMes {
+  ano: number;
+  mes: number;
+  num_itens: number;
+  valor: string;
+}
+export interface EspecialidadeResumo {
+  especialidade_id: number;
+  codigo: string;
+  resumo_anual: EspecialidadeAno[];
+  resumo_mensal: EspecialidadeMes[];
+}
+
+export async function getEspecialidadesResumo(): Promise<EspecialidadeResumo[]> {
+  const { data } = await api.get<EspecialidadeResumo[]>("/dashboard/especialidades-resumo");
   return data;
 }
 

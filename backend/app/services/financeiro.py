@@ -63,6 +63,35 @@ def resumo_por_ano(
 
 
 @dataclass
+class ResumoMes:
+    ano: int
+    mes: int  # 1..12
+    brutos: Decimal
+    custos: Decimal
+    liquidos: Decimal
+
+
+def resumo_por_mes(
+    brutos_por_mes: dict[tuple[int, int], Decimal | float],
+    custos_por_mes: dict[tuple[int, int], Decimal | float],
+) -> list[ResumoMes]:
+    """Calcula o resumo mensal (brutos, custos, líquidos) por (ano, mês).
+
+    As chaves são tuplos (ano, mês). Os meses resultantes são a união das chaves
+    de ambos os dicionários, ordenados por ano e mês crescentes.
+    """
+    chaves = sorted(set(brutos_por_mes) | set(custos_por_mes))
+    resultado: list[ResumoMes] = []
+    for ano, mes in chaves:
+        brutos = _dec(brutos_por_mes.get((ano, mes), 0))
+        custos = _dec(custos_por_mes.get((ano, mes), 0))
+        resultado.append(
+            ResumoMes(ano=ano, mes=mes, brutos=brutos, custos=custos, liquidos=brutos - custos)
+        )
+    return resultado
+
+
+@dataclass
 class LinhaDepreciacao:
     ano: int
     valor_inicial: Decimal

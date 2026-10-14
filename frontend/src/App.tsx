@@ -8,6 +8,7 @@ import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { EspecialidadesPage } from "./pages/EspecialidadesPage";
+import { EquipamentosPage } from "./pages/EquipamentosPage";
 import { IntermediariosPage } from "./pages/IntermediariosPage";
 import { ExternosPage } from "./pages/ExternosPage";
 
@@ -34,6 +35,7 @@ export function App() {
                 }
               />
               <Route path="/especialidades" element={<EspecialidadesPage />} />
+              <Route path="/equipamentos" element={<EquipamentosPage />} />
               <Route path="/intermediarios" element={<IntermediariosPage />} />
               <Route path="/externos" element={<ExternosPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

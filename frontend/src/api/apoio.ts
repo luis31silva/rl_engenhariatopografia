@@ -9,6 +9,17 @@ export interface Especialidade {
 }
 export type EspecialidadeInput = Omit<Especialidade, "id">;
 
+export interface EspecialidadeDesempenho {
+  especialidade_id: number;
+  codigo: string;
+  descricao?: string | null;
+  prazo_top: number;
+  prazo_ok: number;
+  num_concluidos: number;
+  prazo_medio: number | null;
+  classificacao: "Excelente" | "Bom" | "Mau" | null;
+}
+
 export interface Intermediario {
   id: number;
   nome: string;
@@ -26,6 +37,8 @@ export interface Externo {
   nome: string;
   total_ganho?: string | number;
   num_trabalhos?: number;
+  num_trabalhos_ano?: number;
+  valor_ano?: string | number;
 }
 // No input só o nome é editável; as estatísticas são calculadas no servidor.
 export type ExternoInput = { nome: string };
@@ -33,6 +46,10 @@ export type ExternoInput = { nome: string };
 // ---- Especialidades ----
 export async function listEspecialidades(): Promise<Especialidade[]> {
   const { data } = await api.get<Especialidade[]>("/especialidades");
+  return data;
+}
+export async function listEspecialidadesDesempenho(): Promise<EspecialidadeDesempenho[]> {
+  const { data } = await api.get<EspecialidadeDesempenho[]>("/especialidades/desempenho");
   return data;
 }
 export async function createEspecialidade(input: EspecialidadeInput): Promise<Especialidade> {
@@ -67,8 +84,10 @@ export async function deleteIntermediario(id: number): Promise<void> {
 }
 
 // ---- Externos ----
-export async function listExternos(): Promise<Externo[]> {
-  const { data } = await api.get<Externo[]>("/externos");
+export async function listExternos(ano?: number): Promise<Externo[]> {
+  const { data } = await api.get<Externo[]>("/externos", {
+    params: ano != null ? { ano } : undefined,
+  });
   return data;
 }
 export async function createExterno(input: ExternoInput): Promise<Externo> {

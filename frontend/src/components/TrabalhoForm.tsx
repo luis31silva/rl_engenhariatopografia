@@ -94,7 +94,7 @@ export function TrabalhoForm({ opened, onClose, onSubmit, submitting, initial }:
 
   const { data: especialidades = [] } = useQuery({ queryKey: ["especialidades"], queryFn: listEspecialidades });
   const { data: intermediarios = [] } = useQuery({ queryKey: ["intermediarios"], queryFn: () => listIntermediarios() });
-  const { data: externos = [] } = useQuery({ queryKey: ["externos"], queryFn: listExternos });
+  const { data: externos = [] } = useQuery({ queryKey: ["externos"], queryFn: () => listExternos() });
 
   useEffect(() => {
     if (initial) {

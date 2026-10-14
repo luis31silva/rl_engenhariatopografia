@@ -6,11 +6,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_current_user
 from app.models.apoio import Especialidade
+from app.models.trabalho import TrabalhoItem
 from app.schemas.apoio import (
     EspecialidadeCreate,
+    EspecialidadeDesempenhoRead,
     EspecialidadeRead,
     EspecialidadeUpdate,
 )
+from app.services.classificacao import classificar_media
 
 router = APIRouter(
     prefix="/especialidades",
@@ -22,6 +25,52 @@ router = APIRouter(
 @router.get("", response_model=list[EspecialidadeRead])
 def listar(db: Session = Depends(get_db)):
     return db.scalars(select(Especialidade).order_by(Especialidade.codigo)).all()
+
+
+@router.get("/desempenho", response_model=list[EspecialidadeDesempenhoRead])
+def desempenho(db: Session = Depends(get_db)):
+    """Prazo médio de execução por especialidade e respetiva classificação.
+
+    O prazo médio é a média, em dias, de (data_entrega - data_adjudicacao) dos
+    itens concluídos (com ambas as datas) de cada especialidade. A classificação
+    (Excelente / Bom / Mau) compara essa média com os prazos da especialidade.
+    """
+    # Carrega os itens concluídos (com adjudicação e entrega) por especialidade.
+    itens = db.scalars(
+        select(TrabalhoItem).where(
+            TrabalhoItem.especialidade_id.is_not(None),
+            TrabalhoItem.data_adjudicacao.is_not(None),
+            TrabalhoItem.data_entrega.is_not(None),
+        )
+    ).all()
+
+    # Acumula os dias por especialidade.
+    dias_por_esp: dict[int, list[int]] = {}
+    for item in itens:
+        dias = (item.data_entrega - item.data_adjudicacao).days
+        # Ignora valores negativos (entrega antes da adjudicação; dados inconsistentes).
+        if dias < 0:
+            continue
+        dias_por_esp.setdefault(item.especialidade_id, []).append(dias)
+
+    resultado: list[EspecialidadeDesempenhoRead] = []
+    for esp in db.scalars(select(Especialidade).order_by(Especialidade.codigo)).all():
+        dias_lista = dias_por_esp.get(esp.id, [])
+        num = len(dias_lista)
+        media = round(sum(dias_lista) / num, 1) if num else None
+        resultado.append(
+            EspecialidadeDesempenhoRead(
+                especialidade_id=esp.id,
+                codigo=esp.codigo,
+                descricao=esp.descricao,
+                prazo_top=esp.prazo_top,
+                prazo_ok=esp.prazo_ok,
+                num_concluidos=num,
+                prazo_medio=media,
+                classificacao=classificar_media(media, esp.prazo_top, esp.prazo_ok),
+            )
+        )
+    return resultado
 
 
 @router.post("", response_model=EspecialidadeRead, status_code=status.HTTP_201_CREATED)

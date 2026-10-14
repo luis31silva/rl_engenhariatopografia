@@ -14,15 +14,86 @@ import {
 import { notifications } from "@mantine/notifications";
 import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 
+import { Badge, Paper } from "@mantine/core";
+
 import {
   createEspecialidade,
   deleteEspecialidade,
   listEspecialidades,
+  listEspecialidadesDesempenho,
   updateEspecialidade,
   type Especialidade,
+  type EspecialidadeDesempenho,
 } from "../api/apoio";
 import { extractError } from "../utils/errors";
 import { ordenarLista, SortableTh, type SortDir } from "../components/SortableTh";
+
+const CORES_CLASSIFICACAO: Record<string, string> = {
+  Excelente: "green",
+  Bom: "blue",
+  Mau: "red",
+};
+
+function ClassificacaoBadge({ valor }: { valor: EspecialidadeDesempenho["classificacao"] }) {
+  if (!valor) {
+    return (
+      <Badge color="gray" variant="light">
+        —
+      </Badge>
+    );
+  }
+  return (
+    <Badge color={CORES_CLASSIFICACAO[valor] ?? "gray"} variant="light">
+      {valor}
+    </Badge>
+  );
+}
+
+function DesempenhoEspecialidades() {
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["especialidades-desempenho"],
+    queryFn: listEspecialidadesDesempenho,
+  });
+
+  return (
+    <Paper withBorder radius="md" p="md">
+      <Title order={4} mb="sm">
+        Prazo médio de execução
+      </Title>
+      <Table.ScrollContainer minWidth={480}>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Código</Table.Th>
+              <Table.Th ta="right">Prazo (média, dias)</Table.Th>
+              <Table.Th>Classificação</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {data.map((d) => (
+              <Table.Tr key={d.especialidade_id}>
+                <Table.Td>{d.codigo}</Table.Td>
+                <Table.Td ta="right">
+                  {d.prazo_medio == null ? "—" : `${d.prazo_medio} dias`}
+                </Table.Td>
+                <Table.Td>
+                  <ClassificacaoBadge valor={d.classificacao} />
+                </Table.Td>
+              </Table.Tr>
+            ))}
+            {!isLoading && data.length === 0 && (
+              <Table.Tr>
+                <Table.Td colSpan={3} style={{ textAlign: "center" }}>
+                  Sem especialidades.
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
+    </Paper>
+  );
+}
 
 interface FormState {
   codigo: string;
@@ -157,6 +228,8 @@ export function EspecialidadesPage() {
           </Table.Tbody>
         </Table>
       </Table.ScrollContainer>
+
+      <DesempenhoEspecialidades />
 
       <Modal
         opened={opened}

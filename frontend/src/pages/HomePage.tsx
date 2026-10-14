@@ -43,7 +43,6 @@ import {
   type TrabalhoInput,
 } from "../api/trabalhos";
 import { AlertasPanel } from "../components/AlertasPanel";
-import { EstadoBadge } from "../components/EstadoBadge";
 import { SituacaoBadge } from "../components/SituacaoBadge";
 import { SortableTh } from "../components/SortableTh";
 import { TrabalhoForm } from "../components/TrabalhoForm";
@@ -86,7 +85,6 @@ function LinhaTrabalho({
         <Table.Td onClick={() => t.itens.length && setAberto((v) => !v)}>{t.cliente}</Table.Td>
         <Table.Td>{resumoEspec}</Table.Td>
         <Table.Td>{t.intermediario_nome}</Table.Td>
-        <Table.Td ta="right">{eur(t.valor_total)}</Table.Td>
         <Table.Td>
           {/* Menu para mudar a situação (aplica a todas as especialidades). */}
           <Menu position="bottom-start" withinPortal>
@@ -125,7 +123,7 @@ function LinhaTrabalho({
         </Table.Td>
       </Table.Tr>
       <Table.Tr>
-        <Table.Td colSpan={8} p={0} style={{ border: aberto ? undefined : "none" }}>
+        <Table.Td colSpan={7} p={0} style={{ border: aberto ? undefined : "none" }}>
           <Collapse in={aberto}>
             <Box p="sm" bg="var(--mantine-color-gray-0)">
               <Table>
@@ -137,7 +135,6 @@ function LinhaTrabalho({
                     <Table.Th>Externo</Table.Th>
                     <Table.Th ta="right">Valor</Table.Th>
                     <Table.Th ta="right">Valor externo</Table.Th>
-                    <Table.Th>Estado</Table.Th>
                     <Table.Th>Situação</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
@@ -150,9 +147,6 @@ function LinhaTrabalho({
                       <Table.Td>{i.externo_nome ?? "—"}</Table.Td>
                       <Table.Td ta="right">{eur(i.valor)}</Table.Td>
                       <Table.Td ta="right">{eur(i.valor_externo)}</Table.Td>
-                      <Table.Td>
-                        <EstadoBadge estado={i.estado} />
-                      </Table.Td>
                       <Table.Td>
                         <SituacaoBadge situacao={i.situacao} />
                       </Table.Td>
@@ -197,7 +191,7 @@ export function HomePage() {
 
   const { data: especialidades = [] } = useQuery({ queryKey: ["especialidades"], queryFn: listEspecialidades });
   const { data: intermediarios = [] } = useQuery({ queryKey: ["intermediarios"], queryFn: () => listIntermediarios() });
-  const { data: externos = [] } = useQuery({ queryKey: ["externos"], queryFn: listExternos });
+  const { data: externos = [] } = useQuery({ queryKey: ["externos"], queryFn: () => listExternos() });
 
   const filtros = {
     q: buscaDebounced,
@@ -367,7 +361,6 @@ export function HomePage() {
               <SortableTh label="Cliente" campo="cliente" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
               <Table.Th>Especialidades</Table.Th>
               <Table.Th>Intermediário</Table.Th>
-              <Table.Th ta="right">Valor total</Table.Th>
               <Table.Th>Situação</Table.Th>
               <Table.Th />
             </Table.Tr>
@@ -385,7 +378,7 @@ export function HomePage() {
             ))}
             {!isLoading && items.length === 0 && (
               <Table.Tr>
-                <Table.Td colSpan={8}>
+                <Table.Td colSpan={7}>
                   <Text ta="center" c="dimmed">
                     Sem resultados para os filtros aplicados.
                   </Text>

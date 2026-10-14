@@ -52,3 +52,37 @@ def classificar(
     if dias < ok:
         return Estado.OK
     return Estado.MAU
+
+
+# Classificação do PRAZO MÉDIO de uma especialidade (nomes orientados ao
+# desempenho, pedidos pelo utilizador). Mesma lógica de intervalos que `classificar`.
+EXCELENTE = "Excelente"
+BOM = "Bom"
+MAU = "Mau"
+
+
+def classificar_media(
+    prazo_medio: float | None,
+    prazo_top: int | None,
+    prazo_ok: int | None,
+) -> str | None:
+    """Classifica o prazo médio de uma especialidade em Excelente / Bom / Mau.
+
+    - prazo_medio < prazo_top -> Excelente
+    - prazo_medio < prazo_ok  -> Bom
+    - caso contrário          -> Mau
+    Devolve None se não houver média ou se não houver prazos definidos.
+    """
+    if prazo_medio is None:
+        return None
+    if prazo_top is None and prazo_ok is None:
+        return None
+
+    top = prazo_top if prazo_top is not None else 0
+    ok = prazo_ok if prazo_ok is not None else top
+
+    if prazo_medio < top:
+        return EXCELENTE
+    if prazo_medio < ok:
+        return BOM
+    return MAU

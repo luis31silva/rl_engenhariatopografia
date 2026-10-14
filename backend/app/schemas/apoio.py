@@ -28,6 +28,23 @@ class EspecialidadeRead(EspecialidadeBase):
     id: int
 
 
+class EspecialidadeDesempenhoRead(BaseModel):
+    """Avaliação do tempo médio de execução de uma especialidade.
+
+    - prazo_medio: média (em dias) entre adjudicação e entrega dos trabalhos
+      concluídos desta especialidade. None se não houver trabalhos concluídos.
+    - classificacao: "Excelente" | "Bom" | "Mau" | None (sem dados / sem prazos).
+    """
+    especialidade_id: int
+    codigo: str
+    descricao: str | None = None
+    prazo_top: int
+    prazo_ok: int
+    num_concluidos: int = 0
+    prazo_medio: float | None = None
+    classificacao: str | None = None
+
+
 # ---- Intermediário ----
 class IntermediarioBase(BaseModel):
     nome: str = Field(min_length=1, max_length=255)
@@ -74,3 +91,6 @@ class ExternoRead(ExternoBase):
     # Estatísticas calculadas (preenchidas na listagem).
     total_ganho: Decimal = Decimal("0")
     num_trabalhos: int = 0
+    # Do ano pedido (itens entregues nesse ano).
+    num_trabalhos_ano: int = 0
+    valor_ano: Decimal = Decimal("0")

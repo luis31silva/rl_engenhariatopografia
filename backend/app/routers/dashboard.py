@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_user
+from app.models.apoio import Especialidade
 from app.models.financeiro import CustoAnual, Equipamento
 from app.models.trabalho import TrabalhoItem
 from app.schemas.financeiro import (
@@ -21,8 +22,16 @@ from app.schemas.financeiro import (
     EquipamentoUpdate,
     LinhaDepreciacaoRead,
     ResumoAnoRead,
+    ResumoMesRead,
+    EspecialidadeAnoRead,
+    EspecialidadeMesRead,
+    EspecialidadeResumoRead,
 )
-from app.services.financeiro import depreciacao_equipamento, resumo_por_ano
+from app.services.financeiro import (
+    depreciacao_equipamento,
+    resumo_por_ano,
+    resumo_por_mes,
+)
 
 router = APIRouter(
     prefix="/dashboard",
@@ -72,6 +81,58 @@ def dashboard(db: Session = Depends(get_db)):
             eq.ano_aquisicao, Decimal("0")
         ) + Decimal(str(eq.valor))
 
+    # ---- Resumo mensal (por ano e mês) ----
+    # Brutos por mês: ano/mês da data de adjudicação do item.
+    is_sqlite = db.bind.dialect.name == "sqlite"
+
+    def ano_mes(coluna):
+        if is_sqlite:
+            return (
+                func.strftime("%Y", coluna).label("ano"),
+                func.strftime("%m", coluna).label("mes"),
+            )
+        return (
+            extract("year", coluna).label("ano"),
+            extract("month", coluna).label("mes"),
+        )
+
+    ano_adj, mes_adj = ano_mes(TrabalhoItem.data_adjudicacao)
+    brutos_mes_rows = db.execute(
+        select(ano_adj, mes_adj, func.coalesce(func.sum(TrabalhoItem.valor), 0))
+        .where(TrabalhoItem.data_adjudicacao.is_not(None))
+        .group_by("ano", "mes")
+    ).all()
+    brutos_por_mes = {
+        (int(a), int(m)): Decimal(str(total))
+        for a, m, total in brutos_mes_rows
+        if a is not None and m is not None
+    }
+
+    ano_ent, mes_ent = ano_mes(TrabalhoItem.data_entrega)
+    custos_mes_rows = db.execute(
+        select(ano_ent, mes_ent, func.coalesce(func.sum(TrabalhoItem.valor_externo), 0))
+        .where(TrabalhoItem.data_entrega.is_not(None))
+        .group_by("ano", "mes")
+    ).all()
+    custos_por_mes = {
+        (int(a), int(m)): Decimal(str(total))
+        for a, m, total in custos_mes_rows
+        if a is not None and m is not None
+    }
+
+    # Custos fixos anuais entram no mês de dezembro do respetivo ano.
+    for custo in db.scalars(select(CustoAnual)).all():
+        chave = (custo.ano, 12)
+        custos_por_mes[chave] = custos_por_mes.get(chave, Decimal("0")) + Decimal(str(custo.valor))
+
+    resumo_mensal = resumo_por_mes(brutos_por_mes, custos_por_mes)
+    resumo_mensal_out = [
+        ResumoMesRead(
+            ano=r.ano, mes=r.mes, brutos=r.brutos, custos=r.custos, liquidos=r.liquidos
+        )
+        for r in resumo_mensal
+    ]
+
     resumo = resumo_por_ano(brutos_por_ano, custos_por_ano)
     resumo_out = [
         ResumoAnoRead(
@@ -112,11 +173,91 @@ def dashboard(db: Session = Depends(get_db)):
 
     return DashboardRead(
         resumo_anual=resumo_out,
+        resumo_mensal=resumo_mensal_out,
         depreciacao=depreciacao_out,
         total_brutos=total_brutos,
         total_custos=total_custos,
         total_liquidos=total_brutos - total_custos,
     )
+
+
+@router.get("/especialidades-resumo", response_model=list[EspecialidadeResumoRead])
+def especialidades_resumo(db: Session = Depends(get_db)):
+    """Resumo por especialidade: valor bruto e nº de itens, por ano e por mês.
+
+    O ano/mês usa a data de adjudicação do item (quando o trabalho entra), em
+    linha com os "brutos" do Relatório de Contas.
+    """
+    is_sqlite = db.bind.dialect.name == "sqlite"
+    if is_sqlite:
+        ano_col = func.strftime("%Y", TrabalhoItem.data_adjudicacao)
+        mes_col = func.strftime("%m", TrabalhoItem.data_adjudicacao)
+    else:
+        ano_col = extract("year", TrabalhoItem.data_adjudicacao)
+        mes_col = extract("month", TrabalhoItem.data_adjudicacao)
+
+    # Agregação anual por especialidade.
+    anual_rows = db.execute(
+        select(
+            TrabalhoItem.especialidade_id,
+            ano_col.label("ano"),
+            func.count(TrabalhoItem.id),
+            func.coalesce(func.sum(TrabalhoItem.valor), 0),
+        )
+        .where(
+            TrabalhoItem.especialidade_id.is_not(None),
+            TrabalhoItem.data_adjudicacao.is_not(None),
+        )
+        .group_by(TrabalhoItem.especialidade_id, "ano")
+    ).all()
+
+    # Agregação mensal por especialidade.
+    mensal_rows = db.execute(
+        select(
+            TrabalhoItem.especialidade_id,
+            ano_col.label("ano"),
+            mes_col.label("mes"),
+            func.count(TrabalhoItem.id),
+            func.coalesce(func.sum(TrabalhoItem.valor), 0),
+        )
+        .where(
+            TrabalhoItem.especialidade_id.is_not(None),
+            TrabalhoItem.data_adjudicacao.is_not(None),
+        )
+        .group_by(TrabalhoItem.especialidade_id, "ano", "mes")
+    ).all()
+
+    anual_por_esp: dict[int, list[EspecialidadeAnoRead]] = {}
+    for esp_id, ano, num, valor in anual_rows:
+        if esp_id is None or ano is None:
+            continue
+        anual_por_esp.setdefault(esp_id, []).append(
+            EspecialidadeAnoRead(ano=int(ano), num_itens=int(num or 0), valor=Decimal(str(valor)))
+        )
+
+    mensal_por_esp: dict[int, list[EspecialidadeMesRead]] = {}
+    for esp_id, ano, mes, num, valor in mensal_rows:
+        if esp_id is None or ano is None or mes is None:
+            continue
+        mensal_por_esp.setdefault(esp_id, []).append(
+            EspecialidadeMesRead(
+                ano=int(ano), mes=int(mes), num_itens=int(num or 0), valor=Decimal(str(valor))
+            )
+        )
+
+    resultado: list[EspecialidadeResumoRead] = []
+    for esp in db.scalars(select(Especialidade).order_by(Especialidade.codigo)).all():
+        anual = sorted(anual_por_esp.get(esp.id, []), key=lambda r: r.ano)
+        mensal = sorted(mensal_por_esp.get(esp.id, []), key=lambda r: (r.ano, r.mes))
+        resultado.append(
+            EspecialidadeResumoRead(
+                especialidade_id=esp.id,
+                codigo=esp.codigo,
+                resumo_anual=anual,
+                resumo_mensal=mensal,
+            )
+        )
+    return resultado
 
 
 # ---- CRUD custos anuais ----

@@ -60,6 +60,36 @@ class ResumoAnoRead(BaseModel):
     variacao_pct: float | None
 
 
+class ResumoMesRead(BaseModel):
+    ano: int
+    mes: int
+    brutos: Decimal
+    custos: Decimal
+    liquidos: Decimal
+
+
+class EspecialidadeAnoRead(BaseModel):
+    """Resumo anual por especialidade: nº de itens e valor bruto."""
+    ano: int
+    num_itens: int
+    valor: Decimal
+
+
+class EspecialidadeMesRead(BaseModel):
+    """Resumo mensal por especialidade: nº de itens e valor bruto."""
+    ano: int
+    mes: int
+    num_itens: int
+    valor: Decimal
+
+
+class EspecialidadeResumoRead(BaseModel):
+    especialidade_id: int
+    codigo: str
+    resumo_anual: list[EspecialidadeAnoRead]
+    resumo_mensal: list[EspecialidadeMesRead]
+
+
 class LinhaDepreciacaoRead(BaseModel):
     ano: int
     valor_inicial: Decimal
@@ -75,6 +105,7 @@ class DepreciacaoEquipamentoRead(BaseModel):
 
 class DashboardRead(BaseModel):
     resumo_anual: list[ResumoAnoRead]
+    resumo_mensal: list[ResumoMesRead]
     depreciacao: list[DepreciacaoEquipamentoRead]
     total_brutos: Decimal
     total_custos: Decimal
